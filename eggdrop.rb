@@ -2,130 +2,111 @@ raise "Input filename should be given as script argument!" unless ARGV.size > 0
 
 class EggDrop
   @@MAX_F_VAL = 2 ** 32
+  @@STOP = -1
 
-  def initialize
-    @f = @d = @b = 0
-  end
-
-  #Initializes f, d and b according to a three elem array
-  def new_case(params)
+  def initialize(params)
     @f, @d, @b = params
+  @f_max = @d_min = @b_min = 0
   end
 
-  def f_max
-    result = get_max_f_1(@d, @b)
-  end
-
-  def d_min
-    found = false
-    d = (@d / 2.0).ceil
-    min, max = 0, @d
-    until found do
-      f_found = get_max_f_2(d, @b)
-
-      if max == min + 1
-        return max
-      elsif f_found >= @f
-        max = d
-        d -= (max - min) / 2
-      else
-        min = d
-        d += (max - min) / 2
-      end
-    end
-
-
-    @d.downto(0) { |d| puts "D_min for d = #{d}"; return d + 1 if get_max_f(d, @b, false, true) < @f }
-    #@b.upto(@d) { |d| puts "D_min for d = #{d}"; return d if get_max_f(d, @b) >= @f }
-  end
-
-  def b_min
-    found = false
-    b = (@b / 2.0).ceil
-    min, max = 0, @b
-
-    until found do
-      f_found = get_max_f_2(@d, b)
-
-      if max == min + 1
-        return max
-      elsif f_found >= @f
-        max = b
-        b -= (max - min) / 2
-      else
-        min = b
-        b += (max - min) / 2
-      end
-    end
-    #@b.downto(0) { |b| return b + 1 if get_max_f_3(@d, b) < @f }
-    #val = get_max_f_3(@d, @b)
-    #p "B min is #{val}"
-    #val
-  end
-
+  # Returns f_max, d_min and b_min in format specified by the task.
   def get_solution
-    "%s %s %s" % [f_max, d_min, b_min]
+  @f_max, @b_min, @d_min = f_max, b_min, d_min
+    "%s %s %s" % [@f_max, @d_min, @b_min]
   end
 
   private
 
-  #def get_max_f(d, b)
-    #@pascal_triangle.get_row(d)[0..b].inject(:+) - 1
-  #end
+  # F_max is simply newton_sum of given d and b or -1 if the calculated
+  # sum would be too big.
+  def f_max
+    result = get_newton_sum(@d, @b) { |sum| sum >= @@MAX_F_VAL }
+  end
+
+  # D_min should be calculated after b_min since d_min will never be lower
+  # than b_min. This can be used for defining minimum possible d_min value.
+  # The calculation itself consists of cutting d binary (from b_min to d)
+  # and calculating newton_sum until finding first f value lower than given
+  # in the input. d + 1 will then be the one that is required.
+  def d_min
+    min, max = @b_min, @d
+    
+    binary_cut(min, max) do |val|
+      get_newton_sum(val, @b) { |sum| sum > @f }
+    end
+  end
   
-  def get_max_f_1(d, b)
-    previous = 1
-    result = (1..b).inject(1) do |result, i| 
-      return -1 if result >= @@MAX_F_VAL
-      previous *= (d + 1 - i) / i.to_f
-      result + previous
+  # The calculation for b_min consists of cutting d binary (from 0 to b)
+  # and calculating newton_sum until finding first f value lower than given
+  # in the input. b + 1 will then be the one that is required.
+  def b_min
+    min, max = 0, @b
+  
+    binary_cut(min, max) do |val|
+      get_newton_sum(@d, val) { |sum| sum > @f }
     end
-    return result.round - 1
   end
+  
+  # Returns difference between min and max divided by two.
+  # This difference is later used as a step in binary_cut.
+  def step(min, max)
+    (max - min) / 2
+  end
+  
+  # This method should be ran with block to determine value
+  # on found index. When max and min values are next to each
+  # other, max is returned.
+  def binary_cut(min, max)
+    half = max - step(min, max)
+    until max == min + 1 do
+      floor = yield half
 
-  def get_max_f_2(d, b)
-    previous = 1
-    result = (1..b).inject(1) do |result, i| 
-      previous *= (d + 1 - i) / i.to_f
-      previous = previous.round
-      return @f if (result + previous).round > @f
-      return (result.round - 1) if (previous.round == 1)
-      result + previous
+      if floor == @@STOP || floor >= @f
+        max = half
+        half -= step(min, max)
+      else
+        min = half
+        half += step(min, max)
+      end
     end
-    return result.round - 1
+    
+    max
   end
-
-  def get_max_f_3(d, b)
-    previous = 1
-    result = (1..b).inject(1) do |result, i| 
-      previous *= (d + 1 - i) / i.to_f
-      return i if ((result + previous).round - 1) >= @f
-      result + previous
+  
+  # This method calculates newton sum for given d and b.
+  # Binominal coefficient are summed as sum(C(d, i)),
+  # where 1 <= i <= b.
+  # Block is mandatory and needs to return value depending
+  # on newton sum given. It is needed as some calculations
+  # are too big to operate on and need to be broken when
+  # specific conditions are met.
+  def get_newton_sum(d, b)
+    newton_value = newton_sum = 1
+    (1..b).each do |i|
+      
+      # If conditional statement is met for given sum,
+      # return STOP value.
+      return @@STOP if yield newton_sum
+      
+      newton_value *= (d + 1 - i) / i.to_f
+      newton_value = newton_value.round
+      
+      newton_sum += newton_value
+      
+      # There is a possibility that b > d during d_min
+      # calculation.
+      break if newton_value == 1
     end
-    return result.round - 1
+    
+    newton_sum.round - 1
   end
-
-  #def get_max_f(d, b, stop_on_overflow = false)
-    #p "f_max for #{d}, #{b}"
-    #(0..b).inject(0) { |result, i| return -1 if stop_on_overflow && result >= @@MAX_F_VAL; result + newton(b, i) } - 1
-  #end
-
-  #def newton(n, k)
-    #(1..k).inject(1) { |result, i| result * (n - i + 1) / i }
-  #end
 end
 
-egg_drop = EggDrop.new
+# First line from input (nr of testcases) is not needed.
 testcases = File.readlines(ARGV[0]).drop(1)
-
-#egg_drop.new_case([1112818449, 855131647, 543194508])
-#p egg_drop.d_min
-#exit
-t1 = Time.now
 File.open('output.txt', 'w') do |f|
-  testcases.size.times do |tc|
-    egg_drop.new_case(testcases.shift.split.map { |el| el.to_i })
-    f.puts "Case ##{tc + 1}: #{egg_drop.get_solution}"
+  testcases.each_index do |tc_index|
+    egg_drop = EggDrop.new(testcases[tc_index].split.map { |el| el.to_i })
+    f.puts "Case ##{tc_index + 1}: #{egg_drop.get_solution}"
   end
 end
-p "Time taken: #{Time.now - t1}"
