@@ -6,7 +6,7 @@ class EggDrop
 
   def initialize(params)
     @f, @d, @b = params
-  @f_max = @d_min = @b_min = 0
+    @f_max = @d_min = @b_min = 0
   end
 
   # Returns f_max, d_min and b_min in format specified by the task.
@@ -76,10 +76,10 @@ class EggDrop
   # This method calculates newton sum for given d and b.
   # Binominal coefficient are summed as sum(C(d, i)),
   # where 1 <= i <= b.
-  # Block is mandatory and needs to return value depending
-  # on newton sum given. It is needed as some calculations
-  # are too big to operate on and need to be broken when
-  # specific conditions are met.
+  # Block passed to the function should have a conditional
+  # expression to determine when to stop calculation based
+  # on the calculated sum.
+  # In case block evaluates to true, @@STOP is returned.
   def get_newton_sum(d, b)
     newton_value = newton_sum = 1
     (1..b).each do |i|
