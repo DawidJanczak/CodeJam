@@ -5,85 +5,51 @@ $EDGES = 0
 
 raise "Input filename should be given as script argument!" unless ARGV.size > 0
 
+class Transaction
+  def initialize
+    @cost, @items, @with_perishable = 0, [], false
+  end
+
+  attr_reader :cost, :items, :with_perishable
+
+  def add_item(item, price)
+    @cost += price
+    @items << item
+    @with_perishable = (item[-1] == ?!)
+  end
+end
+
 class Shop
-  def initialize(x, y, items)
+  def initialize(x, y, products)
     @x, @y = x, y
-    @items = items
+    @products = products
   end
 
   attr_reader :x, :y, :items
 
-  #def has_item?(item)
-    #@items.has_key?(item)
-  #end
-
   def ==(another_shop)
     @x == another_shop.x && @y == another_shop.y
   end
-
-  def get_item_price(item)
-    @items[item]
-  end
-
-  #def items_cost(item_list)
-    #items_to_buy(item_list).values.inject(:+)
-  #end
-
-  #def has_items(item_list)
-    #items_to_buy(item_list).keys
-  #end
-
-  #def has_perishable_item(item_list)
-    #!(item_list - items_to_buy(item_list)).empty?
-  #end
-
-  #def buy_items(item_list)
-    #result = [0, [], false]
-
-    #@items.each do |item, price|
-      #perishable = item.to_s.concat(?!).intern
-      #has_perishable = item_list.include?(perishable)
-      #if item_list.include?(item) || has_perishable
-        #result[0] += price
-        #if has_perishable
-          #result[1] << perishable
-          #result[2] = true
-        #else
-          #result[1] << item
-        #end
-      #end
-    #end
-
-    #result
-  #end
 
   def buy_items(item_list)
     items_to_buy = items_to_buy(item_list).keys
     transactions = []
 
     flattened = []
+    # Create all combinations of items to buy.
     1.upto(items_to_buy.size) { |i| flattened << items_to_buy.combination(i).to_a }
     flattened.flatten!(1)
 
     flattened.each do |combination|
-      combination_transaction = [0, [], false]
+      combination_transaction = Transaction.new
       combination.each do |item|
-        combination_transaction[0] += @items[item]
-        unless item_list.include?(item)
-          combination_transaction[1] << item.to_s.concat(?!).intern
-          combination_transaction[2] = true
-        else
-          combination_transaction[1] << item
-        end
+        item_to_add = item_list.include?(item) ? item : perishable(item)
+        combination_transaction.add_item(item_to_add, @products[item])
       end
       transactions << combination_transaction
     end
 
     transactions
-    #items_to_buy.each do |item, price|
-      ##Item in item_list finishes with '!'
-      #is_perishable = item_list[item].nil?
-    #end
   end
 
   def to_s
@@ -92,9 +58,13 @@ class Shop
 
   private
 
+  def perishable(item)
+    item.to_s.concat(?!).intern
+  end
+
   def items_to_buy(item_list)
-    @items.select do |item, price|
-      item_list.include?(item) || item_list.include?(item.to_s.concat(?!).intern)
+    @products.select do |product, price|
+      item_list.include?(product) || item_list.include?(perishable(product))
     end
   end
 end
@@ -104,9 +74,6 @@ class ShoppingPlan
 
   def initialize(gas_price, items, shops)
     @gas_price, @items, @shops = gas_price, items, shops
-    #@items_left = @items.dup
-    #@shops_left = @shops.dup
-    #p traverse(0, @@HOME, @shops.dup, @items.dup)
   end
 
   def get_min_cost
@@ -165,8 +132,8 @@ class ShoppingPlan
       base_cost = current_cost + cost(current_location, shop)
 
       transactions.each do |transaction|
-        items = items_left - transaction[1]
-        cost = base_cost + transaction[0]
+        items = items_left - transaction.items
+        cost = base_cost + transaction.cost
         #$DEBUG_PATH << "Transaction #{transaction} in shop #{shop}"
         traversed << traverse(cost, shop, shops, items)
       end
@@ -199,6 +166,7 @@ File.open('output.txt', 'w') do |f|
   num_of_testcases.times do |tc_nr|
     nr_of_shops, gas_price = contents.shift.split[1..-1].map { |el| el.to_i }
     items = contents.shift.split.map { |item| item.intern }
+    p "TC NR #{tc_nr}"
     shops = contents.shift(nr_of_shops).collect do |shop_line|
       shop_data = shop_line.split
       x, y = shop_data.shift(2).map { |num| num.to_i }
