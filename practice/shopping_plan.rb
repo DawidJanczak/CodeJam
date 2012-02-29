@@ -75,7 +75,7 @@ end
 
 class ShoppingPlan
   @@HOME = Shop.new(0, 0, {})
-  @@INIFINITY = 1.0/0
+  @@INFINITY = 1.0/0
 
   def initialize(gas_price, items, shops)
     @gas_price, @items, @shops = gas_price, items, shops
@@ -89,7 +89,7 @@ class ShoppingPlan
   def traverse(current_cost, current_location, shops_left, items_left, go_home = false)
     return current_cost + cost(current_location) if items_left.empty?
     # When there are no shops left and we still have items, it is a wrong way for sure.
-    return @@INIFINITY if shops_left.empty? || current_cost > @best_fit
+    return @@INFINITY if shops_left.empty? || current_cost > @best_fit
 
     traversed = []
 
@@ -112,8 +112,8 @@ class ShoppingPlan
       end
     end
 
-    @best_fit = traversed.compact.min
-    @best_fit
+    candidate = traversed.compact.min
+    @best_fit = candidate unless candidate.nil?
   end
 
   def cost(first, second = @@HOME)
