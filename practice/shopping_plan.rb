@@ -1,10 +1,8 @@
-require 'ap'
-
-$DEBUG_PATH = []
-$EDGES = 0
-
 raise "Input filename should be given as script argument!" unless ARGV.size > 0
 
+# This class represents transaction made in a shop. Transaction is characterized by overall cost,
+# list of items bought and a flag denoting whether a perishable item has been purchased.
+# TODO This class is also responsible for perishable items clarification. It should not be so.
 class Transaction
   def initialize
     @cost, @items, @with_perishable = 0, [], false
@@ -12,6 +10,8 @@ class Transaction
 
   attr_reader :cost, :items, :with_perishable
 
+  # Product consists of its name and price. Price is added to overall cost and item is added to
+  # item list. Additional check whether a perishable item has been bought is made.
   def add_product(item, price)
     @cost += price
     @items << item
@@ -19,32 +19,29 @@ class Transaction
   end
 
   def to_s
-    "#{@items} costed #{@cost}. Perishable? #{@with_perishable}"
+    "#{@items} costed #{@cost}. The transaction " <<
+    @with_perishable ? "included" : "did not include" << " perishable item(s)."
   end
 end
 
+# Shop represents a single shop characterized by its coordinates and a list of products it offers.
 class Shop
   def initialize(x, y, products)
     @x, @y = x, y
     @products = products
   end
 
-  attr_reader :x, :y, :items
-
-  def ==(another_shop)
-    @x == another_shop.x && @y == another_shop.y
-  end
+  attr_reader :x, :y
 
   def buy_items(item_list)
     items_to_buy = items_to_buy(item_list).keys
-    transactions = []
-    flattened = []
+    transactions, combinations = [], []
 
     # Create all combinations of items to buy.
-    1.upto(items_to_buy.size) { |i| flattened << items_to_buy.combination(i).to_a }
-    flattened.flatten!(1)
+    1.upto(items_to_buy.size) { |i| combinations << items_to_buy.combination(i).to_a }
+    combinations.flatten!(1)
 
-    flattened.each do |combination|
+    combinations.each do |combination|
       combination_transaction = Transaction.new
       combination.each do |item|
         item_to_add = item_list.include?(item) ? item : perishable(item)
@@ -140,4 +137,4 @@ File.open('output.txt', 'w') do |f|
     p "#########################################"
   end
 end
-ap "Took #{Time.now - beginning} seconds."
+p "Took #{Time.now - beginning} seconds."
