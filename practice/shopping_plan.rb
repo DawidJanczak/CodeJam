@@ -34,14 +34,12 @@ class Shop
   attr_reader :x, :y
 
   def buy_items(item_list)
-    items_to_buy = items_to_buy(item_list).keys
-    transactions, combinations = [], []
+    items = items_to_buy(item_list).keys
 
     # Create all combinations of items to buy.
-    1.upto(items_to_buy.size) { |i| combinations << items_to_buy.combination(i).to_a }
-    combinations.flatten!(1)
+    combinations = (1..items.size).flat_map { |i| items.combination(i).to_a }
 
-    combinations.each do |combination|
+    combinations.each.inject([]) do |transactions, combination|
       combination_transaction = Transaction.new
       combination.each do |item|
         item_to_add = item_list.include?(item) ? item : perishable(item)
@@ -49,8 +47,6 @@ class Shop
       end
       transactions << combination_transaction
     end
-
-    transactions
   end
 
   def to_s
@@ -84,8 +80,10 @@ class ShoppingPlan
   end
 
   def traverse(current_cost, current_location, shops_left, items_left, go_home = false)
+    # Return cost of this branch if no items are left.
     return current_cost + cost(current_location) if items_left.empty?
     # When there are no shops left and we still have items, it is a wrong way for sure.
+    # The method should also be stopped if, at any point, calculated cost is greater than best fit.
     return @@INFINITY if shops_left.empty? || current_cost > @best_fit
 
     traversed = []
