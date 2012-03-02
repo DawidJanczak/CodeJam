@@ -39,13 +39,13 @@ class Shop
     # Create all combinations of items to buy.
     combinations = (1..items.size).flat_map { |i| items.combination(i).to_a }
 
-    combinations.each.inject([]) do |transactions, combination|
+    combinations.map do |combination|
       combination_transaction = Transaction.new
       combination.each do |item|
         item_to_add = item_list.include?(item) ? item : perishable(item)
         combination_transaction.add_product(item_to_add, @products[item])
       end
-      transactions << combination_transaction
+      combination_transaction
     end
   end
 
