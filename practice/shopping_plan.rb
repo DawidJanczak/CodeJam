@@ -4,11 +4,18 @@ raise "Input filename should be given as script argument!" unless ARGV.size > 0
 # list of items bought and a flag denoting whether a perishable item has been purchased.
 # TODO This class is also responsible for perishable items clarification. It should not be so.
 class Transaction
+  include Comparable
+
   def initialize
     @cost, @items, @with_perishable = 0, [], false
   end
 
   attr_reader :cost, :items, :with_perishable
+
+  # Transactions may be compared according to their overall cost.
+  def <=>(another_transaction)
+    @cost <=> another_transaction.cost
+  end
 
   # Product consists of its name and price. Price is added to overall cost and item is added to
   # item list. Additional check whether a perishable item has been bought is made.
@@ -20,7 +27,7 @@ class Transaction
 
   def to_s
     "#{@items} costed #{@cost}. The transaction " <<
-    @with_perishable ? "included" : "did not include" << " perishable item(s)."
+    (@with_perishable ? "included" : "did not include") << " perishable item(s)."
   end
 end
 
@@ -46,7 +53,7 @@ class Shop
         combination_transaction.add_product(item_to_add, @products[item])
       end
       combination_transaction
-    end
+    end.sort
   end
 
   def to_s
@@ -108,7 +115,7 @@ class ShoppingPlan
     end
 
     candidate = traversed.compact.min
-    @best_fit = candidate unless candidate.nil?
+    @best_fit = candidate unless (candidate.nil? || candidate > @best_fit)
   end
 
   def cost(first, second = @@HOME)
@@ -130,8 +137,11 @@ File.open('output.txt', 'w') do |f|
       Shop.new(x, y, eval(?{ << shop_data.join(",") << ?}))
     end
     plan = ShoppingPlan.new(gas_price, items, shops)
-    f.puts("Case ##{tc_nr + 1}: #{plan.get_min_cost}")
-    puts "Case ##{tc_nr + 1}: #{plan.get_min_cost}"
+    t1 = Time.now
+    cost = plan.get_min_cost
+    f.puts("Case ##{tc_nr + 1}: #{cost}")
+    puts "Case ##{tc_nr + 1}: #{cost}"
+    p "Took #{Time.now - t1} just to calculate this..."
     p "#########################################"
   end
 end
