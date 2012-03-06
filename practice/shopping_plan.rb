@@ -1,3 +1,5 @@
+#!/usr/bin/ruby
+
 raise "Input filename should be given as script argument!" unless ARGV.size > 0
 
 # This class represents transaction made in a shop. Transaction is characterized by overall cost,
@@ -40,11 +42,16 @@ class Shop
 
   attr_reader :x, :y
 
-  def buy_items(item_list)
+  def buy_items(item_list, all_items = false)
     items = items_to_buy(item_list).keys
 
     # Create all combinations of items to buy.
-    combinations = (1..items.size).flat_map { |i| items.combination(i).to_a }
+    combinations = []
+    unless all_items
+      combinations = (1..items.size).flat_map { |i| items.combination(i).to_a }
+    else
+      combinations = items.combination(items.size).to_a
+    end
 
     combinations.map do |combination|
       combination_transaction = Transaction.new
@@ -101,7 +108,7 @@ class ShoppingPlan
     end
 
     shops_left.each do |shop|
-      transactions = shop.buy_items(items_left)
+      transactions = shop.buy_items(items_left, shops_left.size == 1)
       next if transactions.empty?
 
       shops = shops_left - [shop]
