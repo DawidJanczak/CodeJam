@@ -35,12 +35,22 @@ end
 
 # Shop represents a single shop characterized by its coordinates and a list of products it offers.
 class Shop
+  include Comparable
+
   def initialize(x, y, products)
     @x, @y = x, y
     @products = products
   end
 
-  attr_reader :x, :y
+  attr_reader :x, :y, :products
+  protected :products
+
+  # Shops can be compared based on their common products prices. The shop which common items
+  # overall price is cheaper than the other is to be considered cheaper.
+  def <=>(another_shop)
+    common_items = @products.keys & another_shop.products.keys
+    common_items.inject(0) { |diff, item| diff += (@products[item] - another_shop.products[item]) } <=> 0
+  end
 
   def buy_items(item_list, all_items = false)
     items = items_to_buy(item_list).keys
@@ -108,11 +118,13 @@ class ShoppingPlan
     end
 
     shops_left.each do |shop|
+      p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
       transactions = shop.buy_items(items_left, shops_left.size == 1)
       next if transactions.empty?
 
       shops = shops_left - [shop]
       base_cost = current_cost + cost(current_location, shop)
+      next if base_cost > @best_fit
 
       transactions.each do |transaction|
         items = items_left - transaction.items
