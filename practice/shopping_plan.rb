@@ -1,4 +1,6 @@
 #!/usr/bin/ruby
+#
+#TODO Sorting shops according to distance too...?
 
 raise "Input filename should be given as script argument!" unless ARGV.size > 0
 
@@ -116,6 +118,7 @@ class ShoppingPlan
       current_location = @@HOME
     end
 
+    shops.sort!
     shops.each do |shop|
       #p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
       transactions = shop.buy_items(items_left, shops.size == 1)
