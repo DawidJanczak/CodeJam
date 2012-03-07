@@ -100,41 +100,42 @@ class ShoppingPlan
   end
 
   def get_min_cost
-    "%.7f" % traverse(0, @@HOME, @shops.dup, @items.dup)
+    traverse(0, @@HOME, @shops, @items)
+    "%.7f" % @best_fit
   end
 
-  def traverse(current_cost, current_location, shops_left, items_left, go_home = false)
+  def traverse(current_cost, current_location, shops, items_left, go_home = false)
     # Return cost of this branch if no items are left.
     return current_cost + cost(current_location) if items_left.empty?
     # When there are no shops left and we still have items, it is a wrong way for sure.
     # The method should also be stopped if, at any point, calculated cost is greater than best fit.
-    return @@INFINITY if shops_left.empty? || current_cost > @best_fit
-
-    traversed = []
+    return @@INFINITY if shops.empty? || current_cost > @best_fit
 
     if go_home
       current_cost += cost(current_location)
       current_location = @@HOME
     end
 
-    shops_left.each do |shop|
-      p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
-      transactions = shop.buy_items(items_left, shops_left.size == 1)
-      next if transactions.empty?
+    shops.each do |shop|
+      #p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
+      transactions = shop.buy_items(items_left, shops.size == 1)
 
-      shops = shops_left - [shop]
-      base_cost = current_cost + cost(current_location, shop)
-      next if base_cost > @best_fit
+      shops_left = shops - [shop]
+      travel_cost = current_cost + cost(current_location, shop)
 
       transactions.each do |transaction|
-        items = items_left - transaction.items
-        cost = base_cost + transaction.cost
-        traversed << traverse(cost, shop, shops, items, transaction.with_perishable)
-      end
+        shopping_cost = travel_cost + transaction.cost
+        items_to_buy = items_left - transaction.items
+
+        unless shopping_cost > @best_fit
+          total_cost = traverse(shopping_cost, shop, shops_left, items_to_buy, transaction.with_perishable)
+          #p "Found new best_fit = #{@best_fit}" if total_cost < @best_fit
+          @best_fit = total_cost if total_cost < @best_fit
+        end
+      end unless travel_cost > @best_fit
     end
 
-    candidate = traversed.compact.min
-    @best_fit = candidate unless (candidate.nil? || candidate > @best_fit)
+    @best_fit
   end
 
   def cost(first, second = @@HOME)
