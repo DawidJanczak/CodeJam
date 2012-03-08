@@ -42,6 +42,7 @@ class Shop
   def initialize(x, y, products)
     @x, @y = x, y
     @products = products
+    @cheapest_transactions = {}
   end
 
   attr_reader :x, :y, :products
@@ -71,8 +72,24 @@ class Shop
         item_to_add = item_list.include?(item) ? item : perishable(item)
         combination_transaction.add_product(item_to_add, @products[item])
       end
+      check_cheapest_transactions(combination_transaction.items, combination_transaction.cost)
       combination_transaction
     end.sort
+  end
+
+  def transaction_unprofitable?(transaction)
+    #p @cheapest_transactions
+    @cheapest_transactions.each do |items, cost|
+      diff = transaction.items - items
+      p diff
+      if diff.empty? && transaction.cost > cost
+        p "Unprofitable!"
+        return true
+      end
+    end
+    return false
+    #p "Unprofitable!" if @cheapest_transactions[transaction.items] < transaction.cost
+    #return true if @cheapest_transactions[transaction.items] < transaction.cost
   end
 
   def to_s
@@ -80,6 +97,12 @@ class Shop
   end
 
   private
+
+  def check_cheapest_transactions(item_list, price)
+    if @cheapest_transactions[item_list].nil? || @cheapest_transactions[item_list] > price
+      @cheapest_transactions[item_list] = price
+    end
+  end
 
   def perishable(item)
     item.to_s.concat(?!).intern
@@ -127,6 +150,8 @@ class ShoppingPlan
       travel_cost = current_cost + cost(current_location, shop)
 
       transactions.each do |transaction|
+        #next if shop.transaction_unprofitable?(transaction)
+
         shopping_cost = travel_cost + transaction.cost
         items_to_buy = items_left - transaction.items
 
