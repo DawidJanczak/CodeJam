@@ -31,7 +31,7 @@ class ShoppingPlan
     end
 
     shops.each do |shop|
-      p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
+      #p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
       transactions = shop.buy_items(items_left, shops.size == 1)
 
       shops_left = shops - [shop]
@@ -39,10 +39,10 @@ class ShoppingPlan
 
       transactions.each do |transaction|
         shopping_cost = travel_cost + transaction.cost
-        items_to_buy = items_left - transaction.items
+        items_to_buy = items_left - transaction.bought_items
         unless shopping_cost > @best_fit
           total_cost = traverse(shopping_cost, shop, shops_left, items_to_buy, transaction.with_perishable)
-          p "Found new best_fit = #{@best_fit}" if total_cost < @best_fit
+          #p "Found new best_fit = #{@best_fit}" if total_cost < @best_fit
           @best_fit = total_cost if total_cost < @best_fit
         end
       end unless travel_cost > @best_fit
@@ -57,14 +57,18 @@ class ShoppingPlan
 end
 
 def get_shops(item_list, shop_lines)
+  perishable_items = item_list.select { |item| item[-1] == ?! }
+  perishable_items.map! { |item| item[0...-1] }
+
   shop_lines.collect do |shop_line|
     shop_data = shop_line.split
     x, y = shop_data.shift(2).map { |num| num.to_i }
-    shop_data.map! do |shop_item|
-      item = (shop_item[0...shop_item.index(?:)] + ?!).intern
-      item_list.include?(item) ? shop_item.insert(shop_item.index(?:), ?!) : shop_item
+    products = shop_data.map do |shop_item|
+      item, price = shop_item.split(?:)
+      item << ?! if perishable_items.include?(item)
+      Product.new(item.intern, price.to_i)
     end
-    Shop.new(x, y, eval(?{ << shop_data.join(",") << ?}))
+    Shop.new(x, y, products)
   end
 end
 
