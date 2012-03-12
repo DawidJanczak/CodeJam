@@ -18,29 +18,24 @@ class ShoppingPlan
     "%.7f" % @best_fit
   end
 
-  def traverse(current_cost, current_location, shops, items_left, go_home = false)
+  def traverse(current_cost, current_location, shops, items, go_home = false)
     # Return cost of this branch if no items are left.
-    return current_cost + cost(current_location) if items_left.empty?
+    return current_cost + cost(current_location, @@HOME) if items.empty?
     # When there are no shops left and we still have items, it is a wrong way for sure.
     # The method should also be stopped if, at any point, calculated cost is greater than best fit.
     return @@INFINITY if shops.empty? || current_cost > @best_fit
 
-    if go_home
-      current_cost += cost(current_location)
-      current_location = @@HOME
-    end
-
     shops.each do |shop|
       #p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
-      transactions = shop.buy_items(items_left, shops.size == 1)
+      transactions = shop.buy_items(items, shops.size == 1)
 
       shops_left = shops - [shop]
-      travel_cost = current_cost + cost(current_location, shop)
+      travel_cost = current_cost + cost(current_location, shop, go_home)
 
       transactions.each do |transaction|
         shopping_cost = travel_cost + transaction.cost
-        items_to_buy = items_left - transaction.bought_items
         unless shopping_cost > @best_fit
+          items_to_buy = items - transaction.bought_items
           total_cost = traverse(shopping_cost, shop, shops_left, items_to_buy, transaction.with_perishable)
           #p "Found new best_fit = #{@best_fit}" if total_cost < @best_fit
           @best_fit = total_cost if total_cost < @best_fit
@@ -51,8 +46,22 @@ class ShoppingPlan
     @best_fit
   end
 
-  def cost(first, second = @@HOME)
-    Math.sqrt((second.x - first.x) ** 2 + (second.y - first.y) ** 2) * @gas_price
+  private
+
+  def distance(first, second)
+    Math.sqrt((second.x - first.x) ** 2 + (second.y - first.y) ** 2)
+  end
+
+  def cost(first, second, via_home = false)
+    distance = 0
+
+    unless via_home
+      distance = distance(first, second)
+    else
+      distance = distance(first, @@HOME) + distance(@@HOME, second)
+    end
+
+    distance * @gas_price
   end
 end
 
