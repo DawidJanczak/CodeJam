@@ -53,15 +53,11 @@ class ShoppingPlan
   end
 
   def cost(first, second, via_home = false)
-    distance = 0
-
-    unless via_home
-      distance = distance(first, second)
+    if via_home
+      distance(first, @@HOME) + distance(@@HOME, second)
     else
-      distance = distance(first, @@HOME) + distance(@@HOME, second)
-    end
-
-    distance * @gas_price
+      distance(first, second)
+    end * @gas_price
   end
 end
 
