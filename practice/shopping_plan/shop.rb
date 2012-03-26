@@ -9,6 +9,10 @@ class Shop
 
   attr_reader :x, :y
 
+  def ==(shop)
+    self.x == shop.x && self.y == shop.y
+  end
+
   def buy_items(item_list, all_items = false)
     products = @products.select { |product| item_list.include?(product.name) }
 

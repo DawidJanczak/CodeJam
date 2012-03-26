@@ -1,5 +1,6 @@
 #!/usr/bin/ruby
 
+require 'set'
 require_relative 'shop.rb'
 
 raise "Input filename should be given as script argument!" unless ARGV.size > 0
@@ -11,21 +12,46 @@ class ShoppingPlan
   def initialize(gas_price, items, shops)
     @gas_price, @items, @shops = gas_price, items, shops
     @best_fit = @@INFINITY
+    @sets = {}
   end
 
   def get_min_cost
-    traverse(0, @@HOME, @shops, @items)
+    traverse(0, @@HOME, @shops, @items, Set.new)
     "%.7f" % @best_fit
   end
 
-  def traverse(current_cost, current_location, shops, items, go_home = false)
+  def path_checked?(shops_visited, next_shop)
+    !(@sets.empty? || @sets[shops_visited].nil?)
+  end
+
+  def get_cheapest_cost(shops_visited, next_shop)
+    @sets[[shops_visited]][next_shop]
+  end
+
+  def add_cost(shops_visited, next_shop, cost)
+    return if shops_visited.empty?
+    #TODO add only when new price is lower than existing
+    @sets[shops_visited] = { next_shop => cost }
+  end
+
+  def traverse(current_cost, current_location, shops, items, shops_visited, go_home = false)
     # Return cost of this branch if no items are left.
+    #p shops_visited
     return current_cost + cost(current_location, @@HOME) if items.empty?
     # When there are no shops left and we still have items, it is a wrong way for sure.
     # The method should also be stopped if, at any point, calculated cost is greater than best fit.
-    return @@INFINITY if shops.empty? || current_cost > @best_fit
+    #return @@INFINITY if shops.empty? || current_cost > @best_fit
+    return @@INFINITY if shops.empty?
+
+    #p "Already have #{shops_visited.inspect}" if @sets.include?(shops_visited)
 
     shops.each do |shop|
+      if path_checked?(shops_visited, shop)
+        total_cost = current_cost + cost(current_location, shop, go_home)
+        @best_fit = total_cost if total_cost < @best_fit
+        next
+      end
+
       #p "At home with best_fit = #{@best_fit}" if current_location.x == @@HOME.x && current_location.y == @@HOME.y && !go_home
       transactions = shop.buy_items(items, shops.size == 1)
 
@@ -34,13 +60,16 @@ class ShoppingPlan
 
       transactions.each do |transaction|
         shopping_cost = travel_cost + transaction.cost
-        unless shopping_cost > @best_fit
+        #unless shopping_cost > @best_fit
           items_to_buy = items - transaction.bought_items
-          total_cost = traverse(shopping_cost, shop, shops_left, items_to_buy, transaction.with_perishable)
+          #@sets << shops_visited
+          total_cost = traverse(shopping_cost, shop, shops_left, items_to_buy, shops_visited.dup.add(shop), transaction.with_perishable)
+          add_cost(shops_visited, shop, transaction.cost)
+          #TODO sets should be updated here with bigger trees too
           #p "Found new best_fit = #{@best_fit}" if total_cost < @best_fit
           @best_fit = total_cost if total_cost < @best_fit
-        end
-      end unless travel_cost > @best_fit
+        #end
+      end# unless travel_cost > @best_fit
     end
 
     @best_fit
