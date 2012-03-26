@@ -17,21 +17,31 @@ class ShoppingPlan
 
   def get_min_cost
     traverse(0, @@HOME, @shops, @items, Set.new)
+    #@sets.each { |s| p s }
     "%.7f" % @best_fit
   end
 
-  def path_checked?(shops_visited, next_shop)
-    !(@sets.empty? || @sets[shops_visited].nil?)
+  def path_checked?(shops_visited, next_shop, items_bought)
+    !@sets.empty? && @sets[[shops_visited, next_shop, items_bought]] && shops_visited.size > 1
   end
 
-  def get_cheapest_cost(shops_visited, next_shop)
-    @sets[[shops_visited]][next_shop]
+  def get_cheapest_cost(shops_visited, next_shop, items_bought)
+    @sets[[shops_visited, next_shop, items_bought]]
   end
 
-  def add_cost(shops_visited, next_shop, cost)
-    return if shops_visited.empty?
-    #TODO add only when new price is lower than existing
-    @sets[shops_visited] = { next_shop => cost }
+  def add_cost(shops_visited, next_shop, items_bought, cost)
+    return if shops_visited.empty? || shops_visited.size < 2
+    #p "Adding cost"
+    old_value = @sets[[shops_visited, next_shop, items_bought]]
+    #p "Old value for shops_visited #{shops_visited.inspect} and shop #{next_shop} is #{old_value}"
+    if old_value
+      #p "Changing val"
+      @sets[[shops_visited, next_shop, items_bought]] = cost if cost < old_value
+    else
+      #p "Not changing val"
+      #TODO WRONG! Next shop should be part of the key.
+      @sets[[shops_visited, next_shop, items_bought]] = cost
+    end
   end
 
   def traverse(current_cost, current_location, shops, items, shops_visited, go_home = false)
@@ -46,9 +56,13 @@ class ShoppingPlan
     #p "Already have #{shops_visited.inspect}" if @sets.include?(shops_visited)
 
     shops.each do |shop|
-      if path_checked?(shops_visited, shop)
-        total_cost = current_cost + cost(current_location, shop, go_home)
+      if path_checked?(shops_visited, shop, items)
+        checked_price = get_cheapest_cost(shops_visited, shop, items)
+        #p "Path from #{shops_visited.inspect} to #{shop} checked and has price #{checked_price}"
+        total_cost = current_cost + cost(current_location, shop, go_home) + checked_price + cost(shop, @@HOME)
         @best_fit = total_cost if total_cost < @best_fit
+        #p "Items = #{items}, current_cost = #{current_cost}"
+        #p "Shops_visited = #{shops_visited.inspect}, shop = #{shop}, price = #{checked_price}" if total_cost.round == 742
         next
       end
 
@@ -64,7 +78,7 @@ class ShoppingPlan
           items_to_buy = items - transaction.bought_items
           #@sets << shops_visited
           total_cost = traverse(shopping_cost, shop, shops_left, items_to_buy, shops_visited.dup.add(shop), transaction.with_perishable)
-          add_cost(shops_visited, shop, transaction.cost)
+          add_cost(shops_visited, shop, items, transaction.cost)
           #TODO sets should be updated here with bigger trees too
           #p "Found new best_fit = #{@best_fit}" if total_cost < @best_fit
           @best_fit = total_cost if total_cost < @best_fit
@@ -121,6 +135,7 @@ File.open('output.txt', 'w') do |f|
     puts "Case ##{tc_nr + 1}: #{cost}"
     p "Took #{Time.now - t1} just to calculate this..."
     p "#########################################"
+    #exit
   end
 end
 p "Took #{Time.now - beginning} seconds."
