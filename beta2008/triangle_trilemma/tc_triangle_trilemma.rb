@@ -54,24 +54,24 @@ class TestTriangle < Test::Unit::TestCase
   end
 
   def test_lengths
-    #assert_equal(:isosceles, @first.lengths_kind)
-    #assert_equal(:scalene, @second.lengths_kind)
-    #assert_equal(:isosceles, @third.lengths_kind)
-    #assert_equal(:scalene, @fourth.lengths_kind)
-    #assert_equal(:scalene, @fifth.lengths_kind)
-    #assert_equal(:isosceles, @sixth.lengths_kind)
-    #assert_nil(@seventh.lengths_kind)
-    #assert_nil(@eighth.lengths_kind)
+    assert_equal(:isosceles, @first.lengths_kind)
+    assert_equal(:scalene, @second.lengths_kind)
+    assert_equal(:isosceles, @third.lengths_kind)
+    assert_equal(:scalene, @fourth.lengths_kind)
+    assert_equal(:scalene, @fifth.lengths_kind)
+    assert_equal(:isosceles, @sixth.lengths_kind)
+    assert_nil(@seventh.lengths_kind)
+    assert_nil(@eighth.lengths_kind)
   end
 
   def test_angles
-    #assert_equal(:obtuse, @first.angles_kind)
-    #assert_equal(:acute, @second.angles_kind)
-    #assert_equal(:acute, @third.angles_kind)
-    #assert_equal(:right, @fourth.angles_kind)
-    #assert_equal(:obtuse, @fifth.angles_kind)
-    #assert_equal(:right, @sixth.angles_kind)
-    #assert_nil(@seventh.angles_kind)
-    #assert_nil(@eighth.angles_kind)
+    assert_equal(:obtuse, @first.angles_kind)
+    assert_equal(:acute, @second.angles_kind)
+    assert_equal(:acute, @third.angles_kind)
+    assert_equal(:right, @fourth.angles_kind)
+    assert_equal(:obtuse, @fifth.angles_kind)
+    assert_equal(:right, @sixth.angles_kind)
+    assert_nil(@seventh.angles_kind)
+    assert_nil(@eighth.angles_kind)
   end
 end
