@@ -1,6 +1,7 @@
 class Point < Struct.new(:x, :y)
   def -(another_point)
-    Math::hypot(x - another_point.x, y - another_point.y)
+    Math::sqrt((x - another_point.x) ** 2 + (y - another_point.y) ** 2)
+    #Math::hypot(x - another_point.x.to_f, y - another_point.y.to_f)
   end
 end
 
@@ -12,19 +13,12 @@ class Triangle
     @distances = [@p1 - @p2, @p1 - @p3, @p2 - @p3].sort
   end
 
-  #Triangle is valid when three points do not lay in one line.
-  #This can be checked by simple equation, however division
-  #by 0 needs to be taken into account.
+  #Checking if triangle is valid can be done with checking its area
+  #using Heron's formula since we have all the distances between vertices.
   def is_valid?
-    p1_p2_denom = @p2.x - @p1.x
-    p1_p3_denom = @p3.x - @p1.x
-
-    return false if p1_p2_denom == 0 && p1_p3_denom == 0
-    return true if p1_p2_denom == 0 || p1_p3_denom == 0
-
-    first_to_second = (@p2.y - @p1.y) / (p1_p2_denom)
-    first_to_third = (@p3.y - @p1.y) / (p1_p3_denom)
-    first_to_second != first_to_third
+    return false if @p1 == @p2 || @p1 == @p3 || @p2 == @p3
+    s = @distances.inject(0) { |sum, distance| sum + distance } / 2.0
+    (@distances.inject(1) { |multi, distance| multi * (s - distance) } * s) > 0
   end
 
   # Angles kind can be calculated based in Pythagorean Theorem.
@@ -61,6 +55,7 @@ File.open('output.txt', 'w') do |f|
   contents.each_with_index do |input_line, index|
     numbers = input_line.split.map { |nr| nr.to_i }
     points = numbers.each_slice(2).inject([]) { |points, slice| points << Point.new(*slice) }
-    f.puts "Case ##{index + 1}: #{Triangle.new(*points)}"
+    t = Triangle.new(*points)
+    f.puts "Case ##{index + 1}: #{t}"
   end
 end
