@@ -1,3 +1,5 @@
+#!/usr/bin/ruby
+
 require 'bigdecimal'
 
 class Point < Struct.new(:x, :y)
@@ -19,7 +21,7 @@ class Triangle
   #Of course triangle is also invalid if either two out of three points are the same.
   def is_valid?
     return false if @p1 == @p2 || @p1 == @p3 || @p2 == @p3
-    s = @distances.inject(0) { |sum, distance| sum + distance } / 2
+    s = @distances.inject(0) { |sum, distance| sum + distance } / 2.0
     (@distances.inject(1) { |multi, distance| multi * (s - distance) } * s) > 0
   end
 
@@ -28,8 +30,8 @@ class Triangle
   # two sides of the equation.
   def angles_kind
     return nil unless is_valid?
-    left_side = (@distances[0] ** 2 + @distances[1] ** 2)
-    right_side = (@distances[2] ** 2)
+    left_side = (@distances[0] ** 2 + @distances[1] ** 2).round
+    right_side = (@distances[2] ** 2).round
     @@PYTHAGOREAN_DIFFERENCE[left_side <=> right_side]
   end
 
