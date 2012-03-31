@@ -36,6 +36,8 @@ class TestTriangle < Test::Unit::TestCase
     helper_tester(assertion_values, :angles_kind)
   end
   
+  private
+
   def helper_tester(assertion_values, method_name)
     assertion_values.zip(@triangles) do |assertion|
       assert_equal(assertion[0], assertion[1].send(method_name))
