@@ -1,8 +1,8 @@
-require 'bigdecimal'
+require 'matrix'
 
 class Point < Struct.new(:x, :y)
   def -(another_point)
-    BigDecimal.new(((x - another_point.x) ** 2 + (y - another_point.y) ** 2)).sqrt(10)
+    Math::sqrt((x - another_point.x) ** 2 + (y - another_point.y) ** 2)
   end
 end
 
@@ -14,13 +14,17 @@ class Triangle
     @distances = [@p1 - @p2, @p1 - @p3, @p2 - @p3].sort
   end
 
-  #Checking if triangle is valid can be done with checking its area
-  #using Heron's formula since we have all the distances between vertices.
-  #Of course triangle is also invalid if either two out of three points are the same.
+  #Area can be calculated as a halved matrix determinant.
+  def area
+    matrix = Matrix[[@p2.x - @p1.x, @p2.y - @p1.y], [@p3.x - @p1.x, @p3.y - @p1.y]]
+    (0.5 * matrix.det).abs
+  end
+
+  #Triangle is invalid if any two of the three points are the same points.
+  #Apart from that triangle is invalid if its area is equal to 0.
   def is_valid?
     return false if @p1 == @p2 || @p1 == @p3 || @p2 == @p3
-    s = @distances.inject(0) { |sum, distance| sum + distance } / 2.0
-    (@distances.inject(1) { |multi, distance| multi * (s - distance) } * s) > 0
+    area > 0
   end
 
   # Angles kind can be calculated based in Pythagorean Theorem.
