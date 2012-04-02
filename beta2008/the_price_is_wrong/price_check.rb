@@ -8,6 +8,7 @@ class PriceCheck
     #@guesses_zip = @guesses.zip(@products)
     sorted_guesses = @guesses.zip(@products).sort_by { |m| m[0] }
     @guessed_order = sorted_guesses.map { |g| g[1] }
+    @results = []
   end
 
   #def min_switch
@@ -19,6 +20,39 @@ class PriceCheck
     #result.delete_values(*to_remove)
     #result
   #end
+
+  def test
+    start_diff = diff(@products, @guessed_order)
+    @products.each do |product|
+      next_products, next_guesses = @products.dup, @guessed_order.dup
+      next_products.delete(product)
+      next_guesses.delete(product)
+      recursive(next_products, next_guesses, start_diff)
+    end
+    @results.sort.first
+  end
+  
+  def diff(products, guesses)
+    products.enum_for(:inject, 0).with_index do |(diff, product), index|
+      guesses[index] != product ? diff + 1 : diff
+    end
+  end
+  
+  def recursive(products, guesses, previous_diff)
+    diff = diff(products, guesses)
+    if diff == 0
+      @results << (@products.dup - products).sort
+    elsif diff >= previous_diff
+      return
+    else
+      guesses.each_with_index do |guess, index|
+        next_products, next_guesses = products.dup, guesses.dup
+        next_products.delete(guess)
+        next_guesses.delete(guess)
+        recursive(next_products, next_guesses, diff)
+      end
+    end
+  end
 
   def switch
     #switch = min_switch

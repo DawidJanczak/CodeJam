@@ -10,7 +10,8 @@ File.open('output.txt', 'w') do |f|
     products = slice[0].split.map { |product| product.intern }
     guesses = slice[1].split.map { |price| price.to_i }
     price_check = PriceCheck.new(products, guesses)
-    f.puts "Case ##{index + 1}: #{price_check.switch.join(" ")}"
+    #f.puts "Case ##{index + 1}: #{price_check.switch.join(" ")}"
+    f.puts "Case ##{index + 1}: #{price_check.test}"
     puts "Case ##{index + 1} solved"
   end
 end
