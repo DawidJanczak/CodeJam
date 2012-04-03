@@ -1,6 +1,7 @@
 #!/usr/bin/ruby
 
 require 'facets/array/delete_values'
+require 'set'
 
 class PriceCheck
   def initialize(products, guesses)
@@ -8,7 +9,8 @@ class PriceCheck
     #@guesses_zip = @guesses.zip(@products)
     sorted_guesses = @guesses.zip(@products).sort_by { |m| m[0] }
     @guessed_order = sorted_guesses.map { |g| g[1] }
-    @results = []
+    @results = Set.new
+    @result_size = @products.size
   end
 
   #def min_switch
@@ -22,14 +24,17 @@ class PriceCheck
   #end
 
   def test
-    start_diff = diff(@products, @guessed_order)
-    @products.each do |product|
-      next_products, next_guesses = @products.dup, @guessed_order.dup
-      next_products.delete(product)
-      next_guesses.delete(product)
-      recursive(next_products, next_guesses, start_diff)
-    end
-    @results.sort.first
+    new_switch(@products.dup, @guessed_order.dup)
+    result = @results.to_a.sort.first
+    result.sort
+    #start_diff = diff(@products, @guessed_order)
+    #@products.each do |product|
+      #next_products, next_guesses = @products.dup, @guessed_order.dup
+      #next_products.delete(product)
+      #next_guesses.delete(product)
+      #recursive(next_products, next_guesses, start_diff)
+    #end
+    #@results.sort.first
   end
   
   def diff(products, guesses)
@@ -38,21 +43,21 @@ class PriceCheck
     end
   end
   
-  def recursive(products, guesses, previous_diff)
-    diff = diff(products, guesses)
-    if diff == 0
-      @results << (@products.dup - products).sort
-    elsif diff >= previous_diff
-      return
-    else
-      guesses.each_with_index do |guess, index|
-        next_products, next_guesses = products.dup, guesses.dup
-        next_products.delete(guess)
-        next_guesses.delete(guess)
-        recursive(next_products, next_guesses, diff)
-      end
-    end
-  end
+  #def recursive(products, guesses, previous_diff)
+    #diff = diff(products, guesses)
+    #if diff == 0
+      #@results << (@products.dup - products).sort
+    #elsif diff >= previous_diff
+      #return
+    #else
+      #guesses.each_with_index do |guess, index|
+        #next_products, next_guesses = products.dup, guesses.dup
+        #next_products.delete(guess)
+        #next_guesses.delete(guess)
+        #recursive(next_products, next_guesses, diff)
+      #end
+    #end
+  #end
 
   def switch
     #switch = min_switch
@@ -72,5 +77,27 @@ class PriceCheck
       end
       return solutions.sort[0] if found
     end
+  end
+
+  def new_switch(products, guesses)
+    return if (@products.size - products.size) >= @result_size
+    products.each do |product|
+      products_copy, guesses_copy = products.dup, guesses.dup
+      products_copy.delete(product)
+      guesses_copy.delete(product)
+      if products_copy == guesses_copy
+        new_result = @products.dup - products_copy
+        if @result_size > new_result.size
+          @result_size = new_result.size
+          @results = Set.new
+        end
+        @results << new_result
+      else
+        new_switch(products_copy, guesses_copy)
+      end
+    end
+    #p @results
+    #exit
+    #@results.sort
   end
 end
