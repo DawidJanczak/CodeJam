@@ -11,6 +11,7 @@ class PriceCheck
     @guessed_order = sorted_guesses.map { |g| g[1] }
     @results = Set.new
     @result_size = @products.size
+    @queue = [[@products.dup, @guessed_order.dup, 0]]
   end
 
   #def min_switch
@@ -24,7 +25,9 @@ class PriceCheck
   #end
 
   def test
-    new_switch(@products.dup, @guessed_order.dup)
+    bfs
+    #new_switch(@products.dup, @guessed_order.dup)
+    #p @results
     result = @results.to_a.sort.first
     result.sort
     #start_diff = diff(@products, @guessed_order)
@@ -79,23 +82,56 @@ class PriceCheck
     end
   end
 
-  def new_switch(products, guesses)
+  def bfs
+    until @queue.empty?
+      #p "dequeuing"
+      pair = @queue.shift
+      new_switch(*pair)
+    end
+  end
+
+  def clean_queue(size)
+    #p "Size before deleting: #{@queue.size}"
+    @queue.delete_if { |el| el.first.size < size }
+    #@queue.each { |el| p el }
+    #p "Size after deleting: #{@queue.size}"
+  end
+
+  def new_switch(products, guesses, nr_of_omits)
     return if (@products.size - products.size) >= @result_size
-    products.each do |product|
-      products_copy, guesses_copy = products.dup, guesses.dup
-      products_copy.delete(product)
-      guesses_copy.delete(product)
-      if products_copy == guesses_copy
-        new_result = @products.dup - products_copy
-        if @result_size > new_result.size
-          @result_size = new_result.size
-          @results = Set.new
-        end
-        @results << new_result
-      else
-        new_switch(products_copy, guesses_copy)
+    p "Switch for products: #{products}, guesses: #{guesses} with omit #{nr_of_omits}"
+    if products == guesses
+      new_result = @products.dup - products
+      #p "Found result #{new_result}"
+      @results_size = new_result.size
+      clean_queue(products.size) if @results.empty?
+      @results << new_result
+    elsif @results.empty?
+      products.shift(nr_of_omits)
+      guesses.shift(nr_of_omits)
+      products.each_with_index do |product, counter|
+        products_copy, guesses_copy = products.dup, guesses.dup
+        products_copy.delete(product)
+        guesses_copy.delete(product)
+        p "Queue size is #{@queue.size} and products size is #{products.size}"
+        p "Adding with #{counter} omits"
+        @queue << [products_copy, guesses_copy, counter]
+        #if products_copy == guesses_copy
+        #new_result = @products.dup - products_copy
+        #if @result_size > new_result.size
+        #@result_size = new_result.size
+        #@results = Set.new
+        #end
+        ##p "Found new result: #{new_result}"
+        #@results << new_result.sort
+        #elsif @results.empty?
+        ##else
+        #@queue << [products_copy, guesses_copy]
+        ##new_switch(products_copy, guesses_copy)
+        #end
       end
     end
+
     #p @results
     #exit
     #@results.sort
