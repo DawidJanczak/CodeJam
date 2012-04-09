@@ -7,7 +7,7 @@ contents.delete_at(0)
 
 File.open('output.txt', 'w') do |f|
   contents.each_slice(2).with_index do |slice, index|
-    if index == 2
+    if index == 10
       products = slice[0].split.map { |product| product.intern }
       guesses = slice[1].split.map { |price| price.to_i }
       price_check = PriceCheck.new(products, guesses)

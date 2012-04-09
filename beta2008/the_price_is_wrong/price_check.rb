@@ -11,7 +11,7 @@ class PriceCheck
     @guessed_order = sorted_guesses.map { |g| g[1] }
     @results = Set.new
     @result_size = @products.size
-    @queue = [[@products.dup, @guessed_order.dup, 0]]
+    @queue = [[@products.dup, @guessed_order.dup]]
   end
 
   #def min_switch
@@ -86,7 +86,7 @@ class PriceCheck
     until @queue.empty?
       #p "dequeuing"
       pair = @queue.shift
-      new_switch(*pair)
+      switch_decreasing(*pair)
     end
   end
 
@@ -97,43 +97,48 @@ class PriceCheck
     #p "Size after deleting: #{@queue.size}"
   end
 
-  def new_switch(products, guesses, nr_of_omits)
+
+  # Returns an array containing pairs with switched order (second elem should be before first)
+  def get_decreasing(products, guesses)
+    result = Set.new
+    guesses[0..-1].each_cons(2) do |con|
+      #p "Indexes of #{con} in products: #{products.index(con[0])}, #{products.index(con[0])}" 
+      result << con[0] << con[1] if products.index(con[0]) > products.index(con[1])
+    end
+    result.to_a.flatten
+  end
+
+  def switch_decreasing(products, guesses)
+    #p "First s_d with #{products} and #{guesses}"
     return if (@products.size - products.size) >= @result_size
-    p "Switch for products: #{products}, guesses: #{guesses} with omit #{nr_of_omits}"
+
     if products == guesses
       new_result = @products.dup - products
-      #p "Found result #{new_result}"
       @results_size = new_result.size
       clean_queue(products.size) if @results.empty?
       @results << new_result
     elsif @results.empty?
-      products.shift(nr_of_omits)
-      guesses.shift(nr_of_omits)
-      products.each_with_index do |product, counter|
-        products_copy, guesses_copy = products.dup, guesses.dup
-        products_copy.delete(product)
-        guesses_copy.delete(product)
-        p "Queue size is #{@queue.size} and products size is #{products.size}"
-        p "Adding with #{counter} omits"
-        @queue << [products_copy, guesses_copy, counter]
-        #if products_copy == guesses_copy
-        #new_result = @products.dup - products_copy
-        #if @result_size > new_result.size
-        #@result_size = new_result.size
-        #@results = Set.new
-        #end
-        ##p "Found new result: #{new_result}"
-        #@results << new_result.sort
-        #elsif @results.empty?
-        ##else
-        #@queue << [products_copy, guesses_copy]
-        ##new_switch(products_copy, guesses_copy)
-        #end
+      decreasing_values = get_decreasing(products, guesses)
+      #p "Decreasing_values = #{decreasing_values}"
+      if decreasing_values.empty?
+        products.each_with_index do |product, counter|
+          products_copy, guesses_copy = products.dup, guesses.dup
+          products_copy.delete(product)
+          guesses_copy.delete(product)
+          #p "Queue size is #{@queue.size} and products size is #{products.size}"
+          #p "Adding #{products_copy} to queue (decreasing_values)"
+          @queue << [products_copy, guesses_copy]
+        end
+      else
+        decreasing_values.each_with_index do |product|
+          products_copy, guesses_copy = products.dup, guesses.dup
+          products_copy.delete(product)
+          guesses_copy.delete(product)
+          #p "Queue size is #{@queue.size} and products size is #{products.size}"
+          #p "Adding #{products_copy} to queue"
+          @queue << [products_copy, guesses_copy]
+        end
       end
     end
-
-    #p @results
-    #exit
-    #@results.sort
   end
 end
