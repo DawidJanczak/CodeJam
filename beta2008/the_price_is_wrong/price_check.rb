@@ -12,7 +12,9 @@ class PriceCheck
     @results = Set.new
     @result_size = @products.size
     @queue = Set.new([[products.dup, @guessed_order.dup]])
-    @max_decreasing = @products.size
+    #p get_decreasing(@products, @guessed_order)
+    @max_decreasing = get_decreasing(@products, @guessed_order).last
+    #p @max_decreasing
   end
 
   #def min_switch
@@ -86,6 +88,7 @@ class PriceCheck
   def bfs
     until @queue.empty?
       #p "dequeuing, queue is #{@queue.inspect}"
+      p "dequeue, queue size is #{@queue.size}"
       pair = @queue.to_a.first
       @queue.delete(pair)
       #pair = @queue.shift
@@ -103,10 +106,14 @@ class PriceCheck
   # Returns an array containing pairs with switched order (second elem should be before first)
   def get_decreasing(products, guesses)
     result = Set.new
+    nr_of_decs = 0
     guesses[0..-1].each_cons(2) do |con|
-      result << con[0] << con[1] if products.index(con[0]) > products.index(con[1])
+      if products.index(con[0]) > products.index(con[1])
+        result << con[0] << con[1] 
+        nr_of_decs += 1
+      end
     end
-    result.to_a.flatten
+    [result.to_a.flatten, nr_of_decs]
   end
 
   def switch_decreasing(products, guesses)
@@ -119,11 +126,14 @@ class PriceCheck
       clean_queue(products.size) if @results.empty?
       @results << new_result.sort
     elsif @results.empty?
-      decreasing_values = get_decreasing(products, guesses)
-      if decreasing_values.size < @max_decreasing
-        @max_decreasing = decreasing_values.size
+      decreasing_values, nr_of_decs = get_decreasing(products, guesses)
+      #p nr_of_decs
+      #p @max_decreasing
+      if nr_of_decs < @max_decreasing
+        @max_decreasing = nr_of_decs
         clean_queue(products.size)
-      elsif decreasing_values.size > @max_decreasing
+        clean_queue(products.size + 1)
+      elsif nr_of_decs > @max_decreasing
         return
       end
       #p "Decreasing_values = #{decreasing_values}"
@@ -137,7 +147,7 @@ class PriceCheck
           @queue << [products_copy, guesses_copy]
         end
       else
-        decreasing_values.each_with_index do |product|
+        decreasing_values.sort.each_with_index do |product|
           products_copy, guesses_copy = products.dup, guesses.dup
           products_copy.delete(product)
           guesses_copy.delete(product)
